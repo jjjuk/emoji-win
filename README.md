@@ -141,9 +141,11 @@ copy "C:\Windows\Fonts\seguiemj.ttf" "C:\backup\seguiemj_current.ttf"
 We provide a Windows batch script that automates the entire process:
 
 1. **Download `windows_font_manager.bat`** from this repository
-2. **Right-click → "Run as administrator"**
-3. **Choose your action:**
-   - **Option 1: BACKUP** - Backup original font + install converted Apple emoji font + clear cache
+2. **Create a `fonts` folder** in the same directory as the batch file
+3. **Place `AppleColorEmojiForWindows.ttf` in the fonts folder**
+4. **Double-click `windows_font_manager.bat`** (auto-elevates to administrator)
+5. **Choose your action:**
+   - **Option 1: INSTALL** - Backup original font + install Apple emoji font + clear cache
    - **Option 2: RESTORE** - Restore original Windows font + clear cache
 
 ### 🔄 Manual Installation Process
