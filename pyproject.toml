@@ -1,7 +1,7 @@
 [project]
-name = "apple-emoji-windows-converter"
+name = "emoji-win"
 version = "1.0.0"
-description = "Convert Apple Color Emoji fonts to be fully compatible with Windows 11"
+description = "Get beautiful Apple emojis on Windows 11 - convert Apple Color Emoji fonts for Windows compatibility"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -11,7 +11,7 @@ authors = [
     {name = "Your Name", email = "your.email@example.com"}
 ]
 license = {text = "MIT"}
-keywords = ["font", "emoji", "windows", "apple", "converter"]
+keywords = ["emoji", "windows", "apple", "font", "win11", "emojis"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -26,8 +26,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/apple-emoji-windows-converter"
-Repository = "https://github.com/yourusername/apple-emoji-windows-converter"
-Issues = "https://github.com/yourusername/apple-emoji-windows-converter/issues"
+Homepage = "https://github.com/jjjuk/emoji-win"
+Repository = "https://github.com/jjjuk/emoji-win"
+Issues = "https://github.com/jjjuk/emoji-win/issues"
 
 

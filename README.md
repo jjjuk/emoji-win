@@ -1,9 +1,25 @@
-# Apple Color Emoji to Windows Converter
+# emoji-win
 
 > **⚠️ EXPERIMENTAL PROJECT NOTICE**
 > This project is **99% vibe-coded** (created by AI agent) and is highly **experimental**. While the current solution works great on the latest Windows 11, it requires further investigation and testing. Use at your own risk and always backup your system fonts before proceeding.
 
-Convert Apple Color Emoji fonts to be fully compatible with Windows 11, solving the "missing emoji" and "file is not a font" issues that affect most conversion tools.
+## 🍎 Why emoji-win?
+
+**Tired of Windows 11's bland default emojis?** Want the beautiful, expressive Apple emojis on your Windows machine? You're in the right place!
+
+Windows 11 comes with basic, flat emojis that lack personality. Meanwhile, Apple's emojis are colorful, detailed, and full of character. This tool bridges that gap by converting Apple Color Emoji fonts to work perfectly on Windows 11.
+
+### Before vs After
+- **Before**: 😐 Boring Windows emojis that look like they're from 2010
+- **After**: 😍 Beautiful Apple emojis with rich colors and details
+
+### Perfect for:
+- 🎨 **Designers** who want consistent emoji appearance across platforms
+- 💬 **Content creators** who need expressive emojis for social media
+- 👥 **Anyone** who's tired of Windows' lackluster emoji design
+- 🔄 **Mac users** who want familiar emojis on their Windows machines
+
+Transform your Windows emoji experience from bland to brilliant! 🚀
 
 ## ✨ Features
 
@@ -17,7 +33,7 @@ Convert Apple Color Emoji fonts to be fully compatible with Windows 11, solving 
 ### Super Quick (One-liner workflow)
 ```bash
 # 1. Clone and enter directory
-git clone https://github.com/yourusername/apple-emoji-windows-converter.git && cd apple-emoji-windows-converter
+git clone https://github.com/jjjuk/emoji-win.git && cd emoji-win
 
 # 2. Download AppleColorEmoji.ttf from apple-emoji-linux releases to fonts/ directory
 
@@ -36,13 +52,13 @@ uv run python main.py fonts/AppleColorEmoji.ttf fonts/SegoeUIEmoji.ttf
 
 **One-liner with uv (recommended):**
 ```bash
-git clone https://github.com/yourusername/apple-emoji-windows-converter.git && cd apple-emoji-windows-converter
+git clone https://github.com/jjjuk/emoji-win.git && cd emoji-win
 ```
 
 **Alternative with pip:**
 ```bash
-git clone https://github.com/yourusername/apple-emoji-windows-converter.git
-cd apple-emoji-windows-converter
+git clone https://github.com/jjjuk/emoji-win.git
+cd emoji-win
 pip install fonttools
 ```
 

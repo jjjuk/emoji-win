@@ -1,11 +1,11 @@
 #!/bin/bash
-# Apple Color Emoji to Windows Converter - Easy Wrapper Script
+# emoji-win - Get beautiful Apple emojis on Windows 11
 # Usage: ./convert.sh [input_font.ttf] [output_font.ttf]
 
 set -e
 
-echo "🍎 Apple Color Emoji to Windows Converter"
-echo "=========================================="
+echo "🍎 emoji-win - Get beautiful Apple emojis on Windows 11"
+echo "======================================================="
 
 # Check if uv is available
 if ! command -v uv &> /dev/null; then

@@ -1,13 +1,13 @@
 @echo off
-REM Apple Color Emoji to Windows Font Manager
-REM This script helps manage Windows emoji font replacement
+REM emoji-win - Windows Font Manager
+REM Get beautiful Apple emojis on Windows 11
 REM Run as Administrator!
 
 setlocal enabledelayedexpansion
 
-echo ========================================
-echo Apple Color Emoji Windows Font Manager
-echo ========================================
+echo =======================================
+echo emoji-win - Windows Font Manager
+echo =======================================
 echo.
 echo WARNING: This is experimental software!
 echo Always backup your system before proceeding.
@@ -177,7 +177,7 @@ goto MENU
 
 :EXIT
 echo.
-echo Thank you for using Apple Color Emoji Windows Font Manager!
+echo Thank you for using emoji-win!
 echo Remember: This is experimental software - always keep backups!
 pause
 exit /b 0

@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """
-Apple Color Emoji to Windows Converter
+emoji-win - Get beautiful Apple emojis on Windows 11
 
 Converts Apple Color Emoji fonts to be fully compatible with Windows 11
-and mimics the default Segoe UI Emoji font structure.
+and replaces the default Windows emoji font.
 
-This tool works with Apple Color Emoji fonts, which can be obtained from:
+Tired of boring Windows emojis? This tool brings Apple's beautiful,
+expressive emojis to your Windows machine!
+
+Get Apple Color Emoji fonts from:
 https://github.com/samuelngs/apple-emoji-linux/releases
 
-Author: Your Name
+Author: jjjuk
 License: MIT
 """
 
@@ -252,7 +255,7 @@ def convert_apple_emoji_to_windows(input_path, output_path):
 def main():
     """Main CLI entry point"""
     if len(sys.argv) != 3:
-        print("Apple Color Emoji to Windows Converter")
+        print("emoji-win - Get beautiful Apple emojis on Windows 11")
         print("Usage: python main.py <input_apple_font.ttf> <output_windows_font.ttf>")
         print("\nExample:")
         print("  python main.py AppleColorEmoji.ttf SegoeUIEmoji.ttf")

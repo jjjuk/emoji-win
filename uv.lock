@@ -3,7 +3,7 @@ revision = 2
 requires-python = ">=3.11"
 
 [[package]]
-name = "apple-emoji-windows-converter"
+name = "emoji-win"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
