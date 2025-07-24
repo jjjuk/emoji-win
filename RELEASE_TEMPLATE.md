@@ -5,26 +5,30 @@
 ## 🎉 What's Included
 
 ### Ready-to-Install Font
+
 - **`AppleColorEmojiForWindows.ttf`** - Pre-converted iOS <ios-version> Apple Color Emoji font
 - **Fully Windows 11 compatible** - No more "file is not a font" errors
 - **1,400+ emoji characters** - All the latest iOS <ios-version> emojis working perfectly
 - **High quality** - Rich colors, detailed designs, expressive characters
 
 ### Installation Tools
+
 - **`windows_font_manager.bat`** - Automated Windows font manager with auto-elevation
 - **Complete backup system** - Safe installation with easy restoration
 - **Smart font detection** - Automatically finds font in fonts folder
 - **One-click process** - INSTALL backs up + installs, RESTORE brings back Windows emojis
 
-## � Super Quick Installation
+## 🚀 Super Quick Installation
 
 ### Option 1: Automated (Recommended)
-1. **Download** `emoji-win-<release-version>-ios-<ios-version>.zip` and **extract all files** 
-4. Go to to **extracted directory** and **Double-click** `windows_font_manager.bat` (auto-elevates to admin)
-5. **Choose option 1** (INSTALL) - font auto-detected from fonts folder
-6. **Restart Windows** - Enjoy beautiful Apple emojis! 🎨
+
+1. **Download** `emoji-win-<release-version>-ios-<ios-version>.zip` and **extract all files**
+2. Go to to **extracted directory** and **Double-click** `windows_font_manager.bat` (auto-elevates to admin)
+3. **Choose option 1** (INSTALL) - font auto-detected from fonts folder
+4. **Restart Windows** - Enjoy beautiful Apple emojis! 🎨
 
 ### Option 2: Manual Installation
+
 ```cmd
 # Create backup directory
 mkdir C:\FontBackup
@@ -45,6 +49,7 @@ shutdown /r /t 0
 ## 🔄 Easy Restoration
 
 To go back to Windows emojis:
+
 1. **Double-click** `windows_font_manager.bat`
 2. **Choose option 2** (RESTORE)
 3. **Restart Windows**
@@ -52,10 +57,10 @@ To go back to Windows emojis:
 ## ✨ Before vs After
 
 | Windows 11 Default | iOS <ios-version> Apple |
-|-------------------|-----------------|
-| 😐 Flat, boring | 😍 Rich, expressive |
-| 🎨 Limited colors | 🌈 Vibrant details |
-| 📱 Outdated design | ✨ Modern, beautiful |
+| ------------------ | ----------------------- |
+| 😐 Flat, boring    | 😍 Rich, expressive     |
+| 🎨 Limited colors  | 🌈 Vibrant details      |
+| 📱 Outdated design | ✨ Modern, beautiful    |
 
 ## 🛡️ Safety Features
 
@@ -78,7 +83,6 @@ Your Installation Folder/
 ## 📋 System Requirements
 
 - **Windows 11** (latest version recommended)
-- **~25MB free space** for font file and backups
 - **Administrator privileges** (automatically requested)
 
 ## 🎯 Perfect For
@@ -101,7 +105,7 @@ Your Installation Folder/
 - **Color support**: Full CBDT/CBLC bitmap color
 - **Character count**: 1,494 emoji characters
 - **Windows compatibility**: Mimics Segoe UI Emoji structure
-- **File size**: ~24MB
+- **File size**: ~42MB
 - **Auto-elevation**: PowerShell Start-Process with RunAs
 
 ## 🙏 Acknowledgments
