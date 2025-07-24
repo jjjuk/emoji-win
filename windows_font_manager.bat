@@ -1,9 +1,17 @@
 @echo off
 REM emoji-win - Windows Font Manager
 REM Get beautiful Apple emojis on Windows 11
-REM Run as Administrator!
+REM Auto-elevates to Administrator!
 
 setlocal enabledelayedexpansion
+
+REM Check if running as administrator, if not, auto-elevate
+net session >nul 2>&1
+if %errorLevel% neq 0 (
+    echo Requesting Administrator privileges...
+    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    exit /b 0
+)
 
 echo =======================================
 echo emoji-win - Windows Font Manager
@@ -13,11 +21,19 @@ echo WARNING: This is experimental software!
 echo Always backup your system before proceeding.
 echo.
 
-REM Check if running as administrator
-net session >nul 2>&1
-if %errorLevel% neq 0 (
-    echo ERROR: This script must be run as Administrator!
-    echo Right-click and select "Run as administrator"
+REM Check for AppleColorEmojiForWindows.ttf in fonts folder
+set "FONT_FILE=%~dp0fonts\AppleColorEmojiForWindows.ttf"
+if exist "%FONT_FILE%" (
+    echo ✓ Found AppleColorEmojiForWindows.ttf in fonts folder
+    set "AUTO_FONT_PATH=%FONT_FILE%"
+) else (
+    echo ❌ ERROR: AppleColorEmojiForWindows.ttf not found in fonts folder!
+    echo.
+    echo Please ensure AppleColorEmojiForWindows.ttf is placed in the fonts\ directory
+    echo relative to this batch file.
+    echo.
+    echo Expected location: %~dp0fonts\AppleColorEmojiForWindows.ttf
+    echo.
     pause
     exit /b 1
 )
@@ -25,19 +41,19 @@ if %errorLevel% neq 0 (
 :MENU
 echo.
 echo Select an option:
-echo 1. BACKUP - Backup original font and install converted Apple emoji font
+echo 1. INSTALL - Backup original font and install Apple emoji font [fonts\AppleColorEmojiForWindows.ttf]
 echo 2. RESTORE - Restore original Windows emoji font
 echo 3. Exit
 echo.
 set /p choice="Enter your choice (1-3): "
 
-if "%choice%"=="1" goto BACKUP
+if "%choice%"=="1" goto INSTALL
 if "%choice%"=="2" goto RESTORE
 if "%choice%"=="3" goto EXIT
 echo Invalid choice. Please try again.
 goto MENU
 
-:BACKUP
+:INSTALL
 echo.
 echo === BACKUP ORIGINAL FONT AND INSTALL CONVERTED FONT ===
 echo.
@@ -47,28 +63,32 @@ echo Step 1: Creating backup...
 if not exist "C:\FontBackup" mkdir "C:\FontBackup"
 
 if exist "C:\Windows\Fonts\seguiemj.ttf" (
-    copy "C:\Windows\Fonts\seguiemj.ttf" "C:\FontBackup\seguiemj_original.ttf" >nul
-    echo ✓ Font file backed up to C:\FontBackup\seguiemj_original.ttf
+    if not exist "C:\FontBackup\seguiemj_original.ttf" (
+        copy "C:\Windows\Fonts\seguiemj.ttf" "C:\FontBackup\seguiemj_original.ttf" >nul
+        echo ✓ Font file backed up to C:\FontBackup\seguiemj_original.ttf
+    ) else (
+        echo ✓ Backup already exists, skipping font backup
+    )
 ) else (
     echo ⚠ Original font file not found!
 )
 
-reg export "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" "C:\FontBackup\fonts_registry_backup.reg" >nul 2>&1
-if %errorLevel% equ 0 (
-    echo ✓ Registry backed up to C:\FontBackup\fonts_registry_backup.reg
+if not exist "C:\FontBackup\fonts_registry_backup.reg" (
+    reg export "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" "C:\FontBackup\fonts_registry_backup.reg" >nul 2>&1
+    if %errorLevel% equ 0 (
+        echo ✓ Registry backed up to C:\FontBackup\fonts_registry_backup.reg
+    ) else (
+        echo ⚠ Failed to backup registry
+    )
 ) else (
-    echo ⚠ Failed to backup registry
+    echo ✓ Registry backup already exists, skipping registry backup
 )
 
 echo.
 REM Step 2: Install converted font
 echo Step 2: Installing converted font...
-set /p fontpath="Enter path to your converted SegoeUIEmoji.ttf: "
-
-if not exist "%fontpath%" (
-    echo ERROR: Font file not found: %fontpath%
-    goto MENU
-)
+set "fontpath=%AUTO_FONT_PATH%"
+echo Using font: %fontpath%
 
 echo.
 echo Removing original font...
@@ -126,7 +146,7 @@ echo.
 
 if not exist "C:\FontBackup\seguiemj_original.ttf" (
     echo ERROR: Backup file not found!
-    echo Please ensure you have run BACKUP first to create the backup.
+    echo Please ensure you have run INSTALL first to create the backup.
     goto MENU
 )
 
