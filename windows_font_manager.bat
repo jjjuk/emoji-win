@@ -24,10 +24,10 @@ echo.
 REM Check for AppleColorEmojiForWindows.ttf in fonts folder
 set "FONT_FILE=%~dp0fonts\AppleColorEmojiForWindows.ttf"
 if exist "%FONT_FILE%" (
-    echo ✓ Found AppleColorEmojiForWindows.ttf in fonts folder
+    echo [SUCCESS] Found AppleColorEmojiForWindows.ttf in fonts folder
     set "AUTO_FONT_PATH=%FONT_FILE%"
 ) else (
-    echo ❌ ERROR: AppleColorEmojiForWindows.ttf not found in fonts folder!
+    echo [ERROR] AppleColorEmojiForWindows.ttf not found in fonts folder!
     echo.
     echo Please ensure AppleColorEmojiForWindows.ttf is placed in the fonts\ directory
     echo relative to this batch file.
@@ -59,30 +59,21 @@ echo === BACKUP ORIGINAL FONT AND INSTALL CONVERTED FONT ===
 echo.
 
 REM Step 1: Create backup
-echo Step 1: Creating backup...
+echo Step 1: Creating registry backup (non-destructive approach)...
 if not exist "C:\FontBackup" mkdir "C:\FontBackup"
-
-if exist "C:\Windows\Fonts\seguiemj.ttf" (
-    if not exist "C:\FontBackup\seguiemj_original.ttf" (
-        copy "C:\Windows\Fonts\seguiemj.ttf" "C:\FontBackup\seguiemj_original.ttf" >nul
-        echo ✓ Font file backed up to C:\FontBackup\seguiemj_original.ttf
-    ) else (
-        echo ✓ Backup already exists, skipping font backup
-    )
-) else (
-    echo ⚠ Original font file not found!
-)
 
 if not exist "C:\FontBackup\fonts_registry_backup.reg" (
     reg export "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" "C:\FontBackup\fonts_registry_backup.reg" >nul 2>&1
     if %errorLevel% equ 0 (
-        echo ✓ Registry backed up to C:\FontBackup\fonts_registry_backup.reg
+        echo [SUCCESS] Registry backed up to C:\FontBackup\fonts_registry_backup.reg
     ) else (
-        echo ⚠ Failed to backup registry
+        echo [WARNING] Failed to backup registry
     )
 ) else (
-    echo ✓ Registry backup already exists, skipping registry backup
+    echo [INFO] Registry backup already exists, skipping registry backup
 )
+
+echo [INFO] Using non-destructive method - original Windows font files remain untouched
 
 echo.
 REM Step 2: Install converted font
@@ -90,36 +81,45 @@ echo Step 2: Installing converted font...
 set "fontpath=%AUTO_FONT_PATH%"
 echo Using font: %fontpath%
 
-echo.
-echo Removing original font...
-if exist "C:\Windows\Fonts\seguiemj.ttf" (
-    takeown /f "C:\Windows\Fonts\seguiemj.ttf" >nul 2>&1
-    icacls "C:\Windows\Fonts\seguiemj.ttf" /grant administrators:F >nul 2>&1
-    del "C:\Windows\Fonts\seguiemj.ttf" >nul 2>&1
-    if %errorLevel% equ 0 (
-        echo ✓ Original font removed
-    ) else (
-        echo ⚠ Failed to remove original font
-    )
-)
 
-reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" /v "Segoe UI Emoji (TrueType)" /f >nul 2>&1
 
 echo.
-echo Installing converted font...
-copy "%fontpath%" "C:\Windows\Fonts\seguiemj.ttf" >nul
-if %errorLevel% equ 0 (
-    echo ✓ Font file installed
+echo Installing Apple emoji font (non-destructive method)...
+
+REM Copy our font to Windows Fonts directory with its original name
+copy "%fontpath%" "C:\Windows\Fonts\AppleColorEmojiForWindows.ttf" >nul 2>&1
+set COPY_RESULT=%errorLevel%
+
+if %COPY_RESULT% equ 0 (
+    echo [SUCCESS] Apple emoji font copied to Windows Fonts directory
 ) else (
-    echo ⚠ Failed to install font file
+    echo [ERROR] Cannot copy font file to Windows Fonts directory
+    echo.
+    echo Possible solutions:
+    echo 1. Temporarily disable antivirus software
+    echo 2. Run as Administrator ^(right-click batch file^)
+    echo 3. Check if font file exists: %fontpath%
+    echo 4. Check available disk space
+    echo.
+    pause
     goto MENU
 )
 
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" /v "Segoe UI Emoji (TrueType)" /t REG_SZ /d "seguiemj.ttf" /f >nul
+REM Registry redirection - point to our Apple emoji font
+echo Redirecting Windows emoji font to Apple emojis...
+
+REM Main font registration - redirect Segoe UI Emoji to our Apple font
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" /v "Segoe UI Emoji (TrueType)" /t REG_SZ /d "AppleColorEmojiForWindows.ttf" /f >nul
+
+REM Additional font name variations for broader app compatibility
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" /v "Segoe UI Emoji Regular (TrueType)" /t REG_SZ /d "AppleColorEmojiForWindows.ttf" /f >nul
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" /v "SegoeUIEmoji (TrueType)" /t REG_SZ /d "AppleColorEmojiForWindows.ttf" /f >nul
+
 if %errorLevel% equ 0 (
-    echo ✓ Registry updated
+    echo [SUCCESS] Registry successfully redirected to Apple emoji font
+    echo [INFO] Original Windows font files remain untouched
 ) else (
-    echo ⚠ Failed to update registry
+    echo [WARNING] Registry update may have failed - some entries might not work
 )
 
 REM Step 3: Clear font cache
@@ -127,70 +127,63 @@ echo.
 echo Step 3: Clearing font cache...
 del /q /s "%windir%\ServiceProfiles\LocalService\AppData\Local\FontCache\*" >nul 2>&1
 del /q /s "%windir%\System32\FNTCACHE.DAT" >nul 2>&1
-echo ✓ Font cache cleared
+echo [SUCCESS] Font cache cleared
 
 echo.
-echo ✅ BACKUP AND INSTALLATION COMPLETED!
+echo [COMPLETED] BACKUP AND INSTALLATION COMPLETED!
 echo Files backed up to C:\FontBackup\
 echo Apple emoji font installed successfully!
 echo.
-echo ⚠ IMPORTANT: Please restart Windows for changes to take effect.
+echo [IMPORTANT] Please restart Windows for changes to take effect.
 goto MENU
 
 
 
 :RESTORE
 echo.
-echo === RESTORE ORIGINAL FONT AND CLEAR CACHE ===
+echo === RESTORE ORIGINAL WINDOWS EMOJIS ===
 echo.
 
-if not exist "C:\FontBackup\seguiemj_original.ttf" (
-    echo ERROR: Backup file not found!
-    echo Please ensure you have run INSTALL first to create the backup.
-    goto MENU
-)
-
-echo Step 1: Removing converted font...
-if exist "C:\Windows\Fonts\seguiemj.ttf" (
-    del "C:\Windows\Fonts\seguiemj.ttf" >nul 2>&1
-    echo ✓ Converted font removed
-)
-
-reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" /v "Segoe UI Emoji (TrueType)" /f >nul 2>&1
-
-echo.
-echo Step 2: Restoring original font...
-copy "C:\FontBackup\seguiemj_original.ttf" "C:\Windows\Fonts\seguiemj.ttf" >nul
-if %errorLevel% equ 0 (
-    echo ✓ Original font restored
+echo Step 1: Removing Apple emoji font...
+if exist "C:\Windows\Fonts\AppleColorEmojiForWindows.ttf" (
+    del "C:\Windows\Fonts\AppleColorEmojiForWindows.ttf" >nul 2>&1
+    echo [SUCCESS] Apple emoji font removed from Windows Fonts directory
 ) else (
-    echo ⚠ Failed to restore font file
-    goto MENU
+    echo [WARNING] Apple emoji font not found (may already be removed)
 )
 
 if exist "C:\FontBackup\fonts_registry_backup.reg" (
+    echo Restoring original registry from backup...
     reg import "C:\FontBackup\fonts_registry_backup.reg" >nul 2>&1
     if %errorLevel% equ 0 (
-        echo ✓ Registry restored
+        echo [SUCCESS] Original registry restored from backup
     ) else (
-        echo ⚠ Failed to restore registry
+        echo [WARNING] Failed to restore registry from backup - using default
+        reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" /v "Segoe UI Emoji (TrueType)" /t REG_SZ /d "seguiemj.ttf" /f >nul
+        echo [SUCCESS] Default registry entry recreated
     )
 ) else (
+    echo No registry backup found - recreating default entry...
     reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" /v "Segoe UI Emoji (TrueType)" /t REG_SZ /d "seguiemj.ttf" /f >nul
-    echo ✓ Registry entry recreated
+
+    REM Clean up any additional entries we may have created
+    reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" /v "Segoe UI Emoji Regular (TrueType)" /f >nul 2>&1
+    reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" /v "SegoeUIEmoji (TrueType)" /f >nul 2>&1
+
+    echo [SUCCESS] Default Windows emoji registry restored
 )
 
 echo.
 echo Step 3: Clearing font cache...
 del /q /s "%windir%\ServiceProfiles\LocalService\AppData\Local\FontCache\*" >nul 2>&1
 del /q /s "%windir%\System32\FNTCACHE.DAT" >nul 2>&1
-echo ✓ Font cache cleared
+echo [SUCCESS] Font cache cleared
 
 echo.
-echo ✅ RESTORATION COMPLETED!
+echo [COMPLETED] RESTORATION COMPLETED!
 echo Original Windows emoji font restored successfully!
 echo.
-echo ⚠ IMPORTANT: Please restart Windows for changes to take effect.
+echo [IMPORTANT] Please restart Windows for changes to take effect.
 goto MENU
 
 

@@ -178,30 +178,43 @@ def convert_apple_emoji_to_windows(input_path, output_path):
     else:
         print("✓ glyf table already exists")
 
-    # Step 4: Replace font names to mimic Segoe UI Emoji
-    print("\n4. Updating font names...")
+    # Step 4: Replace font names to mimic Segoe UI Emoji with enhanced compatibility
+    print("\n4. Updating font names for maximum application compatibility...")
     name_table = font["name"]
     name_table.names = []
 
+    # Enhanced name table with multiple platform/encoding combinations for better compatibility
     windows_names = [
-        (1, "Segoe UI Emoji"),
-        (2, "Regular"),
-        (3, "Microsoft:Segoe UI Emoji Regular:2023"),
-        (4, "Segoe UI Emoji"),
-        (5, "Version 1.00"),
-        (6, "SegoeUIEmoji"),
-        (16, "Segoe UI Emoji"),
-        (17, "Regular"),
+        (1, "Segoe UI Emoji"),      # Font Family name
+        (2, "Regular"),             # Font Subfamily name
+        (3, "Microsoft:Segoe UI Emoji Regular:2023"),  # Unique font identifier
+        (4, "Segoe UI Emoji"),      # Full font name
+        (5, "Version 1.00"),        # Version string
+        (6, "SegoeUIEmoji"),        # PostScript name
+        (16, "Segoe UI Emoji"),     # Typographic Family name
+        (17, "Regular"),            # Typographic Subfamily name
+        (21, "Segoe UI Emoji"),     # WWS Family Name
+        (22, "Regular"),            # WWS Subfamily Name
     ]
 
-    for name_id, name_string in windows_names:
-        record = NameRecord()
-        record.nameID = name_id
-        record.platformID = 3
-        record.platEncID = 1
-        record.langID = 0x409
-        record.string = name_string
-        name_table.names.append(record)
+    # Add names for multiple platform/encoding combinations for broader compatibility
+    platforms = [
+        (3, 1, 0x409),   # Microsoft Unicode BMP (most common)
+        (3, 10, 0x409),  # Microsoft Unicode full repertoire
+        (1, 0, 0),       # Apple Unicode (for cross-platform apps)
+    ]
+
+    for platform_id, plat_enc_id, lang_id in platforms:
+        for name_id, name_string in windows_names:
+            record = NameRecord()
+            record.nameID = name_id
+            record.platformID = platform_id
+            record.platEncID = plat_enc_id
+            record.langID = lang_id
+            record.string = name_string
+            name_table.names.append(record)
+
+    print(f"✓ Added {len(name_table.names)} name records for enhanced compatibility")
 
     # Step 5: Update OS/2 table for Windows compatibility
     print("\n5. Updating OS/2 table...")

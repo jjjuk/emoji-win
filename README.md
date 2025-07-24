@@ -25,6 +25,8 @@ Transform your Windows emoji experience from bland to brilliant! 🚀
 
 - ✅ **Full Windows compatibility** - No more "file is not a font" errors
 - ✅ **Complete emoji coverage** - All 1,400+ emojis work properly
+- ✅ **Enhanced app compatibility** - Works with Telegram, Discord, browsers, and more
+- ✅ **Advanced font registration** - Multiple registry entries for maximum compatibility
 - ✅ **Proper font structure** - Follows Windows Segoe UI Emoji patterns
 - ✅ **Easy to use** - Simple command-line interface
 
@@ -242,6 +244,11 @@ If you need to restore the original Windows emoji font:
 - Restart Windows completely (not just applications)
 - Clear font cache: `del /q /s %windir%\ServiceProfiles\LocalService\AppData\Local\FontCache\*`
 - Check if font is properly registered in registry
+
+**Application-specific issues (Telegram, Discord, etc.):**
+- See detailed solutions in [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+- Enhanced registry entries now automatically added for better app compatibility
+- Clear application-specific caches and restart apps
 
 **System instability:**
 - Boot into Safe Mode
