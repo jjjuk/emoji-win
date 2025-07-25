@@ -9,10 +9,6 @@
 
 Windows 11 comes with basic, flat emojis that lack personality. Meanwhile, Apple's emojis are colorful, detailed, and full of character. This tool bridges that gap by converting Apple Color Emoji fonts to work perfectly on Windows 11.
 
-### Before vs After
-- **Before**: 😐 Boring Windows emojis that look like they're from 2010
-- **After**: 😍 Beautiful Apple emojis with rich colors and details
-
 ### Perfect for:
 - 🎨 **Designers** who want consistent emoji appearance across platforms
 - 💬 **Content creators** who need expressive emojis for social media
