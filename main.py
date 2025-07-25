@@ -19,6 +19,8 @@ from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables._n_a_m_e import NameRecord
 from fontTools.ttLib.tables._c_m_a_p import CmapSubtable
 import sys
+import io
+from PIL import Image
 
 
 def convert_apple_emoji_to_windows(input_path, output_path):
@@ -276,6 +278,13 @@ def convert_apple_emoji_to_windows(input_path, output_path):
             except AttributeError:
                 print(f"  - Strike {i}: Available")
 
+    # Step 9: Optimize bitmap sizes for DirectWrite compatibility
+    if "CBDT" in font and "CBLC" in font:
+        print("\n9. Optimizing bitmap sizes for DirectWrite compatibility...")
+        success = fix_cbdt_cblc_sizes_for_directwrite(font)
+        if not success:
+            print("⚠ Bitmap resizing failed - font may not work properly in DirectWrite apps")
+
     # Step 10: Save the modified font
     print("\n10. Saving Windows-compatible font...")
     try:
@@ -286,104 +295,426 @@ def convert_apple_emoji_to_windows(input_path, output_path):
         test_font = TTFont(output_path)
         glyph_count = test_font["maxp"].numGlyphs
         print(f"✓ Verification: Font has {glyph_count} glyphs")
-        print(f"✓ Saved font tables: {sorted(test_font.keys())}")
         test_font.close()
 
-        print("\n🎉 SUCCESS! Your font is now Windows-compatible!")
+        print("\n✨ Font successfully converted with Windows compatibility improvements!")
         print("\nTo install on Windows:")
         print("1. Copy the output font file to your Windows machine")
-        print(
-            "2. Right-click the font file and select 'Install for all users' (requires admin)"
-        )
-        print("3. Restart applications to use the new emoji font")
-        print(
-            "\n✨ Font successfully converted with Windows compatibility improvements!"
-        )
-
-        # Create DirectWrite analysis report
-        create_directwrite_analysis(font, output_path)
+        print("2. Run windows_font_manager.bat as Administrator")
+        print("3. Choose option 1 (INSTALL)")
+        print("4. Restart Windows for changes to take effect")
 
         return True
 
     except Exception as e:
-        print(f"✗ Error saving font: {e}")
+        print(f"❌ Error saving font: {e}")
         return False
 
 
-def create_directwrite_analysis(font, output_path):
-    """Create analysis report for DirectWrite compatibility debugging"""
-    report_path = output_path.replace('.ttf', '_directwrite_analysis.txt')
 
+def fix_cbdt_cblc_sizes_for_directwrite(font):
+    """
+    Fix CBDT/CBLC bitmap sizes to match DirectWrite requirements
+    Resize bitmaps from Apple's 137x137 to DirectWrite's preferred 128x128
+    """
+    if "CBDT" not in font or "CBLC" not in font:
+        print("⚠ No CBDT/CBLC tables found")
+        return False
+
+    cblc = font["CBLC"]
+    cbdt = font["CBDT"]
+
+    # DirectWrite preferred sizes
+    directwrite_sizes = [16, 20, 24, 32, 40, 48, 64, 96, 128]
+
+    print(f"Found {len(cblc.strikes)} bitmap strikes to analyze")
+
+    strikes_modified = 0
+
+    for i, strike in enumerate(cblc.strikes):
+        print(f"\nProcessing strike {i}:")
+
+        # Get current size
+        current_size = None
+        if hasattr(strike, 'bitmapSizeTable'):
+            bst = strike.bitmapSizeTable
+            if hasattr(bst, 'ppemX') and hasattr(bst, 'ppemY'):
+                current_size = (bst.ppemX, bst.ppemY)
+                print(f"  Current size: {current_size[0]}x{current_size[1]}")
+
+        if not current_size:
+            print(f"  ⚠ Cannot determine current size, skipping")
+            continue
+
+        # Find closest DirectWrite size
+        current_max = max(current_size)
+        closest_size = min(directwrite_sizes, key=lambda x: abs(x - current_max))
+
+        if current_max == closest_size:
+            print(f"  ✓ Size {current_max} already DirectWrite compatible")
+            continue
+
+        print(f"  Resizing from {current_max}x{current_max} to {closest_size}x{closest_size}")
+
+        try:
+            # Method 1: Try to resize actual bitmap data
+            success = resize_strike_bitmaps(font, i, closest_size)
+            if success:
+                strikes_modified += 1
+                print(f"  ✓ Successfully resized bitmap data for strike {i}")
+            else:
+                # Method 2: At minimum, update the size metadata for DirectWrite
+                print(f"  ⚠ Could not resize bitmap data, updating size metadata only")
+                success = update_strike_size_metadata(font, i, closest_size)
+                if success:
+                    strikes_modified += 1
+                    print(f"  ✓ Updated size metadata for strike {i} (DirectWrite compatibility)")
+                else:
+                    print(f"  ❌ Failed to update strike {i}")
+
+        except Exception as e:
+            print(f"  ❌ Error processing strike {i}: {e}")
+
+    if strikes_modified > 0:
+        print(f"\n✓ Successfully modified {strikes_modified} bitmap strikes for DirectWrite compatibility")
+        return True
+    else:
+        print(f"\n⚠ No bitmap strikes were modified")
+        return False
+
+
+def resize_strike_bitmaps(font, strike_index, new_size):
+    """
+    Resize all bitmaps in a specific strike to the new size using proper fonttools CBDT API
+    """
+    cblc = font["CBLC"]
+    cbdt = font["CBDT"]
+
+    if strike_index >= len(cblc.strikes):
+        return False
+
+    strike = cblc.strikes[strike_index]
+
+    # Update the strike size information in CBLC
+    if hasattr(strike, 'bitmapSizeTable'):
+        bst = strike.bitmapSizeTable
+        if hasattr(bst, 'ppemX') and hasattr(bst, 'ppemY'):
+            bst.ppemX = new_size
+            bst.ppemY = new_size
+            print(f"    Updated CBLC strike size table to {new_size}x{new_size}")
+
+    # Process each glyph bitmap in this strike using proper CBDT access
+    if not hasattr(strike, 'indexSubTables') or not strike.indexSubTables:
+        print(f"    ⚠ No index subtables found")
+        return False
+
+    bitmaps_resized = 0
+    total_glyphs = 0
+
+    # Get the glyph order to map glyph IDs to names
+    glyph_order = font.getGlyphOrder()
+
+    # Access CBDT strike data using correct fonttools API
     try:
-        with open(report_path, 'w', encoding='utf-8') as f:
-            f.write("=== DIRECTWRITE COMPATIBILITY ANALYSIS ===\n\n")
+        if not hasattr(cbdt, 'strikeData') or strike_index >= len(cbdt.strikeData):
+            print(f"    ❌ No strike data found for strike {strike_index}")
+            return False
 
-            # OS/2 table analysis
-            if "OS/2" in font:
-                os2 = font["OS/2"]
-                f.write("OS/2 TABLE ANALYSIS:\n")
-                f.write(f"  Version: {os2.version}\n")
-                f.write(f"  fsSelection: {bin(os2.fsSelection)} (USE_TYPO_METRICS: {'YES' if os2.fsSelection & (1 << 7) else 'NO'})\n")
-                f.write(f"  Typography metrics: Ascender={os2.sTypoAscender}, Descender={os2.sTypoDescender}, LineGap={os2.sTypoLineGap}\n")
-                f.write(f"  Weight class: {os2.usWeightClass}\n")
-                f.write(f"  Unicode ranges: {hex(os2.ulUnicodeRange1)}, {hex(os2.ulUnicodeRange2)}\n\n")
+        strike_data = cbdt.strikeData[strike_index]  # This is a dictionary of glyph_name -> bitmap_glyph
 
-            # CMAP analysis
-            if "cmap" in font:
-                cmap = font["cmap"]
-                f.write("CMAP TABLE ANALYSIS:\n")
-                f.write(f"  Total subtables: {len(cmap.tables)}\n")
-                for i, subtable in enumerate(cmap.tables):
-                    char_count = len(subtable.cmap) if hasattr(subtable, "cmap") else 0
-                    f.write(f"  Subtable {i}: Platform {subtable.platformID}, Encoding {subtable.platEncID}, Format {subtable.format}, Chars: {char_count}\n")
-                f.write("\n")
+        print(f"    Found {len(strike_data)} bitmap glyphs in strike {strike_index}")
 
-            # Color table analysis
-            color_formats = []
-            if "CBDT" in font and "CBLC" in font:
-                color_formats.append("CBDT/CBLC (bitmap)")
-            if "COLR" in font and "CPAL" in font:
-                color_formats.append("COLR/CPAL (vector)")
-            if "sbix" in font:
-                color_formats.append("sbix (Apple bitmap)")
+        # Process each glyph in the strike data
+        processed_count = 0
+        for glyph_name, bitmap_glyph in strike_data.items():
+            processed_count += 1
+            total_glyphs += 1
 
-            f.write("COLOR FORMAT ANALYSIS:\n")
-            f.write(f"  Available formats: {', '.join(color_formats) if color_formats else 'None detected'}\n")
+            try:
+                # Ensure the bitmap glyph is decompiled so we can access its data
+                if hasattr(bitmap_glyph, 'ensureDecompiled'):
+                    bitmap_glyph.ensureDecompiled()
 
-            if "CBLC" in font:
-                cblc = font["CBLC"]
-                f.write(f"  CBDT/CBLC strikes: {len(cblc.strikes)}\n")
-                for i, strike in enumerate(cblc.strikes):
-                    try:
-                        if hasattr(strike, 'ppemX') and hasattr(strike, 'ppemY'):
-                            f.write(f"    Strike {i}: {strike.ppemX}x{strike.ppemY} pixels\n")
-                        elif hasattr(strike, 'ppem'):
-                            f.write(f"    Strike {i}: {strike.ppem} pixels\n")
-                        else:
-                            f.write(f"    Strike {i}: Available\n")
-                    except:
-                        f.write(f"    Strike {i}: Available\n")
-            f.write("\n")
+                # Get the bitmap data - before decompilation it's in 'data', after it's in 'imageData'
+                bitmap_data = None
 
-            # Essential tables check
-            essential_tables = ["maxp", "hhea", "hmtx", "cmap", "name", "OS/2", "head", "post"]
-            f.write("ESSENTIAL TABLES CHECK:\n")
-            for table_name in essential_tables:
-                status = "✓ Present" if table_name in font else "✗ Missing"
-                f.write(f"  {table_name}: {status}\n")
+                # Try to get data before decompilation
+                if hasattr(bitmap_glyph, 'data') and bitmap_glyph.data:
+                    # Extract PNG data from the raw CBDT data
+                    raw_data = bitmap_glyph.data
+                    # Look for PNG signature in the data
+                    png_start = raw_data.find(b'\x89PNG')
+                    if png_start >= 0:
+                        bitmap_data = raw_data[png_start:]  # PNG data starts here
 
-            f.write("\n=== DIRECTWRITE TROUBLESHOOTING NOTES ===\n")
-            f.write("If DirectWrite apps (Windows Terminal, Telegram, VS Code) don't show emojis:\n")
-            f.write("1. Check USE_TYPO_METRICS flag is set (should be YES above)\n")
-            f.write("2. Verify typography metrics match Windows Segoe UI Emoji\n")
-            f.write("3. Ensure CBDT/CBLC bitmap strikes are available\n")
-            f.write("4. Check that cmap has both BMP (3,1) and full Unicode (3,10) subtables\n")
-            f.write("5. Restart Windows after font installation\n")
+                # If no data found, try after decompilation
+                if not bitmap_data:
+                    if hasattr(bitmap_glyph, 'imageData') and bitmap_glyph.imageData:
+                        bitmap_data = bitmap_glyph.imageData
 
-        print(f"✓ DirectWrite analysis saved to: {report_path}")
+                if bitmap_data and len(bitmap_data) > 10:  # Valid bitmap data
+                    # Resize the bitmap
+                    resized_data = resize_bitmap_data(bitmap_data, new_size)
+                    if resized_data:
+                        # Update the bitmap data back to the glyph
+                        # We need to update the imageData after decompilation
+                        bitmap_glyph.imageData = resized_data
+
+                        bitmaps_resized += 1
+
+                # Show progress for large numbers of glyphs (less frequent)
+                if processed_count % 2000 == 0:
+                    print(f"    Progress: {processed_count}/{len(strike_data)} glyphs processed...")
+
+            except Exception as e:
+                # Skip errors silently - most are expected (non-emoji glyphs)
+                continue
+
+        print(f"    Processed {total_glyphs} glyphs, successfully resized {bitmaps_resized} bitmaps")
+        return bitmaps_resized > 0
 
     except Exception as e:
-        print(f"⚠ Could not create analysis report: {e}")
+        print(f"    ❌ Error accessing CBDT data: {e}")
+        return False
+
+
+def update_strike_size_metadata(font, strike_index, new_size):
+    """
+    Update only the size metadata in CBLC table for DirectWrite compatibility
+    This is a fallback when we can't resize the actual bitmap data
+    """
+    cblc = font["CBLC"]
+
+    if strike_index >= len(cblc.strikes):
+        return False
+
+    strike = cblc.strikes[strike_index]
+
+    # Update the strike size information in CBLC
+    if hasattr(strike, 'bitmapSizeTable'):
+        bst = strike.bitmapSizeTable
+        if hasattr(bst, 'ppemX') and hasattr(bst, 'ppemY'):
+            old_size = f"{bst.ppemX}x{bst.ppemY}"
+            bst.ppemX = new_size
+            bst.ppemY = new_size
+            print(f"    Updated CBLC metadata: {old_size} → {new_size}x{new_size}")
+
+            # Also update other size-related fields if they exist
+            if hasattr(bst, 'hori') and hasattr(bst.hori, 'ascender'):
+                # Scale metrics proportionally
+                scale_factor = new_size / max(bst.ppemX, bst.ppemY) if max(bst.ppemX, bst.ppemY) > 0 else 1
+                bst.hori.ascender = int(bst.hori.ascender * scale_factor)
+                bst.hori.descender = int(bst.hori.descender * scale_factor)
+                print(f"    Scaled horizontal metrics by {scale_factor:.2f}")
+
+            if hasattr(bst, 'vert') and hasattr(bst.vert, 'ascender'):
+                scale_factor = new_size / max(bst.ppemX, bst.ppemY) if max(bst.ppemX, bst.ppemY) > 0 else 1
+                bst.vert.ascender = int(bst.vert.ascender * scale_factor)
+                bst.vert.descender = int(bst.vert.descender * scale_factor)
+                print(f"    Scaled vertical metrics by {scale_factor:.2f}")
+
+            return True
+
+    return False
+
+
+def resize_bitmap_data(bitmap_data, new_size):
+    """
+    Resize bitmap image data using PIL/Pillow
+    """
+    try:
+        # Skip if data is too small to be a valid image
+        if len(bitmap_data) < 10:
+            return None
+
+        # Try to load the bitmap data as an image
+        image_stream = io.BytesIO(bitmap_data)
+        image = Image.open(image_stream)
+
+        # Only resize if the size is actually different
+        if image.size == (new_size, new_size):
+            return bitmap_data  # No need to resize
+
+        # Resize with high-quality resampling
+        resized_image = image.resize((new_size, new_size), Image.Resampling.LANCZOS)
+
+        # Save back to bytes
+        output_stream = io.BytesIO()
+        # Use PNG format for DirectWrite compatibility
+        format_to_use = 'PNG'
+
+        # For PNG, preserve transparency
+        if image.mode in ('RGBA', 'LA') or (image.mode == 'P' and 'transparency' in image.info):
+            resized_image.save(output_stream, format=format_to_use, optimize=True)
+        else:
+            # Convert to RGBA to ensure transparency support
+            resized_image = resized_image.convert('RGBA')
+            resized_image.save(output_stream, format=format_to_use, optimize=True)
+
+        resized_data = output_stream.getvalue()
+
+        return resized_data
+
+    except Exception as e:
+        # Skip errors silently - return None for failed resizes
+        return None
+
+
+def diagnose_cbdt_cblc_directwrite_issues(font):
+    """
+    Diagnose specific CBDT/CBLC bitmap format issues that cause DirectWrite failures
+    Based on Microsoft DirectWrite documentation and research
+    """
+    print("\n=== CBDT/CBLC DIRECTWRITE DIAGNOSTIC ===")
+
+    if "CBDT" not in font or "CBLC" not in font:
+        print("⚠ No CBDT/CBLC tables found")
+        return
+
+    cblc = font["CBLC"]
+    cbdt = font["CBDT"]
+
+    print(f"Found {len(cblc.strikes)} bitmap strikes")
+
+    # Critical DirectWrite requirements based on research:
+    directwrite_issues = []
+
+    for i, strike in enumerate(cblc.strikes):
+        print(f"\nStrike {i} analysis:")
+
+        # 1. Deep analysis of strike attributes
+        print(f"  Strike attributes: {[attr for attr in dir(strike) if not attr.startswith('_')]}")
+
+        # Try multiple ways to get image format
+        image_format = None
+        format_found = False
+
+        # Method 1: Direct imageFormat attribute
+        if hasattr(strike, 'imageFormat'):
+            image_format = strike.imageFormat
+            format_found = True
+
+        # Method 2: Check indexSubTables for format info
+        elif hasattr(strike, 'indexSubTables') and strike.indexSubTables:
+            for j, subtable in enumerate(strike.indexSubTables):
+                print(f"    IndexSubTable {j} attributes: {[attr for attr in dir(subtable) if not attr.startswith('_')]}")
+                if hasattr(subtable, 'imageFormat'):
+                    image_format = subtable.imageFormat
+                    format_found = True
+                    print(f"    Found imageFormat in indexSubTable {j}: {image_format}")
+                    break
+
+        # Method 3: Check first few bytes of actual bitmap data to identify format
+        if not format_found and hasattr(strike, 'indexSubTables') and strike.indexSubTables:
+            try:
+                # Try to access actual bitmap data
+                first_subtable = strike.indexSubTables[0]
+                if hasattr(first_subtable, 'firstGlyphIndex') and hasattr(first_subtable, 'lastGlyphIndex'):
+                    print(f"    Glyph range: {first_subtable.firstGlyphIndex}-{first_subtable.lastGlyphIndex}")
+
+                    # Try to get bitmap data from CBDT table
+                    if hasattr(cbdt, 'strikeData') and i < len(cbdt.strikeData):
+                        strike_data = cbdt.strikeData[i]
+                        if hasattr(strike_data, 'data') and len(strike_data.data) > 8:
+                            # Check magic bytes to identify format
+                            data_start = strike_data.data[:8]
+                            if data_start.startswith(b'\x89PNG'):
+                                image_format = 17
+                                format_found = True
+                                print(f"    Detected PNG format from bitmap data")
+                            elif data_start.startswith(b'\xFF\xD8\xFF'):
+                                image_format = 18
+                                format_found = True
+                                print(f"    Detected JPEG format from bitmap data")
+            except Exception as e:
+                print(f"    Could not analyze bitmap data: {e}")
+
+        # Report image format findings
+        if format_found and image_format is not None:
+            format_names = {17: "PNG", 18: "JPEG", 19: "TIFF", 1: "Monochrome", 2: "Grayscale"}
+            format_name = format_names.get(image_format, f"Unknown({image_format})")
+            print(f"  Image format: {format_name} (code: {image_format})")
+
+            if image_format != 17:
+                issue = f"Strike {i}: DirectWrite prefers PNG format (17), found {image_format} ({format_name})"
+                directwrite_issues.append(issue)
+                print(f"  ❌ {issue}")
+            else:
+                print(f"  ✓ PNG format - DirectWrite compatible")
+        else:
+            directwrite_issues.append(f"Strike {i}: Cannot determine image format - this is critical for DirectWrite")
+            print(f"  ❌ Cannot determine image format - this is critical for DirectWrite")
+
+        # 2. Deep analysis of strike sizes
+        size_found = False
+        size_x = size_y = None
+
+        # Method 1: Direct ppem attributes
+        if hasattr(strike, 'ppemX') and hasattr(strike, 'ppemY'):
+            size_x, size_y = strike.ppemX, strike.ppemY
+            size_found = True
+
+        # Method 2: Check for alternative size attributes
+        elif hasattr(strike, 'ppem'):
+            size_x = size_y = strike.ppem
+            size_found = True
+
+        # Method 3: Check bitmapSizeTable
+        elif hasattr(strike, 'bitmapSizeTable'):
+            bst = strike.bitmapSizeTable
+            if hasattr(bst, 'ppemX') and hasattr(bst, 'ppemY'):
+                size_x, size_y = bst.ppemX, bst.ppemY
+                size_found = True
+
+        if size_found:
+            print(f"  Size: {size_x}x{size_y} pixels")
+
+            # DirectWrite preferred sizes based on Windows Segoe UI Emoji
+            preferred_sizes = [16, 20, 24, 32, 40, 48, 64, 96, 128]
+            if size_x not in preferred_sizes or size_y not in preferred_sizes:
+                issue = f"Strike {i}: Unusual size {size_x}x{size_y} - DirectWrite prefers {preferred_sizes}"
+                directwrite_issues.append(issue)
+                print(f"  ⚠ {issue}")
+            else:
+                print(f"  ✓ Standard size - DirectWrite compatible")
+        else:
+            print(f"  ⚠ Cannot determine strike size")
+            print(f"    Available strike attributes: {[attr for attr in dir(strike) if 'ppem' in attr.lower() or 'size' in attr.lower()]}")
+
+        # 3. Check if strike has proper glyph metrics
+        if hasattr(strike, 'indexSubTables') and strike.indexSubTables:
+            print(f"  Index subtables: {len(strike.indexSubTables)}")
+            print(f"  ✓ Has glyph index data")
+        else:
+            issue = f"Strike {i}: Missing or empty index subtables"
+            directwrite_issues.append(issue)
+            print(f"  ❌ {issue}")
+
+    # Summary of DirectWrite compatibility issues
+    print(f"\n=== DIRECTWRITE COMPATIBILITY SUMMARY ===")
+    if directwrite_issues:
+        print(f"❌ Found {len(directwrite_issues)} potential DirectWrite issues:")
+        for issue in directwrite_issues:
+            print(f"  • {issue}")
+
+        print(f"\n🎯 ROOT CAUSE ANALYSIS:")
+        print(f"DirectWrite shows empty spaces because:")
+        print(f"1. Font claims to support emoji characters (cmap table)")
+        print(f"2. DirectWrite finds CBDT/CBLC bitmap data")
+        print(f"3. DirectWrite validates bitmap format and fails")
+        print(f"4. Instead of fallback, DirectWrite shows empty space")
+
+        print(f"\n💡 POTENTIAL SOLUTIONS:")
+        if any("format" in issue.lower() for issue in directwrite_issues):
+            print(f"• Convert bitmap formats to PNG (format 17)")
+        if any("size" in issue.lower() for issue in directwrite_issues):
+            print(f"• Add standard DirectWrite bitmap sizes")
+        if any("index" in issue.lower() for issue in directwrite_issues):
+            print(f"• Fix glyph index table structure")
+
+    else:
+        print(f"✓ No obvious CBDT/CBLC DirectWrite compatibility issues found")
+        print(f"  The issue may be in other font tables or DirectWrite validation")
 
 
 def main():

@@ -5,7 +5,8 @@ description = "Get beautiful Apple emojis on Windows 11 - convert Apple Color Em
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "fonttools>=4.0.0"
+    "fonttools>=4.0.0",
+    "pillow>=9.0.0",
 ]
 authors = [
     {name = "Your Name", email = "your.email@example.com"}
