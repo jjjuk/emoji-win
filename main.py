@@ -134,49 +134,19 @@ def convert_apple_emoji_to_windows(input_path, output_path):
 
     if has_cbdt_cblc and not has_colr_cpal:
         print("⚠ Font uses CBDT/CBLC (bitmap) - Windows prefers COLR/CPAL (vector)")
-        print(
-            "  Note: Keeping original bitmap format as COLR/CPAL conversion is complex"
-        )
+        print("  Note: Keeping original bitmap format as COLR/CPAL conversion is complex")
         print("  This may limit emoji rendering in some Windows applications")
     elif has_colr_cpal:
         print("✓ Font already has COLR/CPAL color tables (Windows-preferred)")
     else:
         print("⚠ No color tables found")
 
-    # Step 3: Create minimal glyf table if missing (Windows requirement)
-    print("\n3. Ensuring glyf table exists...")
+    # Step 3: Check essential tables (informational only)
+    print("\n3. Checking essential font tables...")
     if "glyf" not in font:
-        print("⚠ Creating minimal glyf table for Windows compatibility...")
-        from fontTools.ttLib.tables._g_l_y_f import table__g_l_y_f, Glyph
-        from fontTools.ttLib.tables._l_o_c_a import table__l_o_c_a
-
-        # Create glyf table with empty glyphs
-        glyf_table = table__g_l_y_f()
-        glyf_table.glyphs = {}
-
-        # Get glyph order from the font
-        glyph_order = font.getGlyphOrder()
-
-        # Create empty glyphs for all glyphs in the font
-        for glyph_name in glyph_order:
-            empty_glyph = Glyph()
-            empty_glyph.numberOfContours = 0
-            empty_glyph.xMin = empty_glyph.yMin = empty_glyph.xMax = (
-                empty_glyph.yMax
-            ) = 0
-            glyf_table.glyphs[glyph_name] = empty_glyph
-
-        # Create corresponding loca table
-        loca_table = table__l_o_c_a()
-        loca_table.locations = [0] * (len(glyph_order) + 1)
-
-        font["glyf"] = glyf_table
-        font["loca"] = loca_table
-        print(
-            f"✓ Created minimal glyf/loca tables with {len(glyph_order)} empty glyphs"
-        )
+        print("⚠ No glyf table - this is expected for CBDT/CBLC emoji fonts")
     else:
-        print("✓ glyf table already exists")
+        print("✓ glyf table present")
 
     # Step 4: Replace font names to mimic Segoe UI Emoji with enhanced compatibility
     print("\n4. Updating font names for maximum application compatibility...")
@@ -216,28 +186,39 @@ def convert_apple_emoji_to_windows(input_path, output_path):
 
     print(f"✓ Added {len(name_table.names)} name records for enhanced compatibility")
 
-    # Step 5: Update OS/2 table for Windows compatibility
-    print("\n5. Updating OS/2 table...")
+    # Step 5: Update OS/2 table for Windows and DirectWrite compatibility
+    print("\n5. Updating OS/2 table for DirectWrite compatibility...")
     if "OS/2" in font:
         os2 = font["OS/2"]
         os2.version = 4
         os2.usWeightClass = 400
         os2.usWidthClass = 5
-        os2.fsSelection = 64
         os2.fsType = 0
         os2.sFamilyClass = 0
 
-        # Set Unicode ranges to indicate emoji support
-        os2.ulUnicodeRange1 = 0x00000001  # Basic Latin
-        os2.ulUnicodeRange2 = 0x00000000
+        # CRITICAL DirectWrite fixes - Typography metrics matching Windows Segoe UI Emoji
+        os2.sTypoAscender = 1069
+        os2.sTypoDescender = -293
+        os2.sTypoLineGap = 0
+
+        # CRITICAL: USE_TYPO_METRICS flag (bit 7) - DirectWrite requires this
+        os2.fsSelection = 64 | (1 << 7)  # Regular style + USE_TYPO_METRICS
+
+        # Set proper character range for emoji
+        os2.usFirstCharIndex = 0x20  # Space character
+        os2.usLastCharIndex = 0x1F6FF  # Last emoji in range
+
+        # DirectWrite Unicode ranges for emoji support
+        os2.ulUnicodeRange1 = 0x00000001 | (1 << 25)  # Basic Latin + Latin-1 Supplement
+        os2.ulUnicodeRange2 = (1 << (57 - 32)) | (1 << (58 - 32)) | (1 << (59 - 32))  # Emoji ranges
         os2.ulUnicodeRange3 = 0x00000000
         os2.ulUnicodeRange4 = 0x00000000
 
-        # Update PANOSE
+        # Update PANOSE for emoji font
         panose = os2.panose
-        panose.bFamilyType = 5
+        panose.bFamilyType = 5  # Decorative
         panose.bSerifStyle = 0
-        panose.bWeight = 5
+        panose.bWeight = 5  # Medium
         panose.bProportion = 0
         panose.bContrast = 0
         panose.bStrokeVariation = 0
@@ -245,6 +226,10 @@ def convert_apple_emoji_to_windows(input_path, output_path):
         panose.bLetterform = 0
         panose.bMidline = 0
         panose.bXHeight = 0
+
+        print("✓ Applied DirectWrite typography metrics (matching Windows Segoe UI Emoji)")
+        print("✓ Set USE_TYPO_METRICS flag (critical for DirectWrite)")
+        print("✓ Updated Unicode ranges for emoji support")
 
     # Step 6: Update head table
     print("\n6. Updating head table...")
@@ -258,8 +243,41 @@ def convert_apple_emoji_to_windows(input_path, output_path):
         post = font["post"]
         post.formatType = 3.0  # No glyph names stored
 
-    # Step 8: Save the modified font
-    print("\n8. Saving Windows-compatible font...")
+    # Step 8: Verify essential font tables
+    print("\n8. Verifying essential font tables...")
+
+    essential_tables = ["maxp", "hhea", "hmtx", "cmap", "name", "OS/2", "head", "post"]
+    missing_tables = []
+
+    for table_name in essential_tables:
+        if table_name in font:
+            print(f"✓ {table_name} table present")
+        else:
+            print(f"⚠ Missing {table_name} table")
+            missing_tables.append(table_name)
+
+    if missing_tables:
+        print(f"⚠ Missing essential tables: {', '.join(missing_tables)}")
+        print("  This may cause compatibility issues with some applications")
+
+    # Check if we have proper bitmap strikes for CBDT/CBLC
+    if has_cbdt_cblc:
+        cblc = font["CBLC"]
+        print(f"✓ CBDT/CBLC bitmap strikes: {len(cblc.strikes)} available")
+        for i, strike in enumerate(cblc.strikes):
+            # Strike objects have different attribute names, let's be safe
+            try:
+                if hasattr(strike, 'ppemX') and hasattr(strike, 'ppemY'):
+                    print(f"  - Strike {i}: {strike.ppemX}x{strike.ppemY} pixels")
+                elif hasattr(strike, 'ppem'):
+                    print(f"  - Strike {i}: {strike.ppem} pixels")
+                else:
+                    print(f"  - Strike {i}: Available")
+            except AttributeError:
+                print(f"  - Strike {i}: Available")
+
+    # Step 10: Save the modified font
+    print("\n10. Saving Windows-compatible font...")
     try:
         font.save(output_path)
         print(f"✓ Successfully saved to: {output_path}")
@@ -282,11 +300,90 @@ def convert_apple_emoji_to_windows(input_path, output_path):
             "\n✨ Font successfully converted with Windows compatibility improvements!"
         )
 
+        # Create DirectWrite analysis report
+        create_directwrite_analysis(font, output_path)
+
         return True
 
     except Exception as e:
         print(f"✗ Error saving font: {e}")
         return False
+
+
+def create_directwrite_analysis(font, output_path):
+    """Create analysis report for DirectWrite compatibility debugging"""
+    report_path = output_path.replace('.ttf', '_directwrite_analysis.txt')
+
+    try:
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write("=== DIRECTWRITE COMPATIBILITY ANALYSIS ===\n\n")
+
+            # OS/2 table analysis
+            if "OS/2" in font:
+                os2 = font["OS/2"]
+                f.write("OS/2 TABLE ANALYSIS:\n")
+                f.write(f"  Version: {os2.version}\n")
+                f.write(f"  fsSelection: {bin(os2.fsSelection)} (USE_TYPO_METRICS: {'YES' if os2.fsSelection & (1 << 7) else 'NO'})\n")
+                f.write(f"  Typography metrics: Ascender={os2.sTypoAscender}, Descender={os2.sTypoDescender}, LineGap={os2.sTypoLineGap}\n")
+                f.write(f"  Weight class: {os2.usWeightClass}\n")
+                f.write(f"  Unicode ranges: {hex(os2.ulUnicodeRange1)}, {hex(os2.ulUnicodeRange2)}\n\n")
+
+            # CMAP analysis
+            if "cmap" in font:
+                cmap = font["cmap"]
+                f.write("CMAP TABLE ANALYSIS:\n")
+                f.write(f"  Total subtables: {len(cmap.tables)}\n")
+                for i, subtable in enumerate(cmap.tables):
+                    char_count = len(subtable.cmap) if hasattr(subtable, "cmap") else 0
+                    f.write(f"  Subtable {i}: Platform {subtable.platformID}, Encoding {subtable.platEncID}, Format {subtable.format}, Chars: {char_count}\n")
+                f.write("\n")
+
+            # Color table analysis
+            color_formats = []
+            if "CBDT" in font and "CBLC" in font:
+                color_formats.append("CBDT/CBLC (bitmap)")
+            if "COLR" in font and "CPAL" in font:
+                color_formats.append("COLR/CPAL (vector)")
+            if "sbix" in font:
+                color_formats.append("sbix (Apple bitmap)")
+
+            f.write("COLOR FORMAT ANALYSIS:\n")
+            f.write(f"  Available formats: {', '.join(color_formats) if color_formats else 'None detected'}\n")
+
+            if "CBLC" in font:
+                cblc = font["CBLC"]
+                f.write(f"  CBDT/CBLC strikes: {len(cblc.strikes)}\n")
+                for i, strike in enumerate(cblc.strikes):
+                    try:
+                        if hasattr(strike, 'ppemX') and hasattr(strike, 'ppemY'):
+                            f.write(f"    Strike {i}: {strike.ppemX}x{strike.ppemY} pixels\n")
+                        elif hasattr(strike, 'ppem'):
+                            f.write(f"    Strike {i}: {strike.ppem} pixels\n")
+                        else:
+                            f.write(f"    Strike {i}: Available\n")
+                    except:
+                        f.write(f"    Strike {i}: Available\n")
+            f.write("\n")
+
+            # Essential tables check
+            essential_tables = ["maxp", "hhea", "hmtx", "cmap", "name", "OS/2", "head", "post"]
+            f.write("ESSENTIAL TABLES CHECK:\n")
+            for table_name in essential_tables:
+                status = "✓ Present" if table_name in font else "✗ Missing"
+                f.write(f"  {table_name}: {status}\n")
+
+            f.write("\n=== DIRECTWRITE TROUBLESHOOTING NOTES ===\n")
+            f.write("If DirectWrite apps (Windows Terminal, Telegram, VS Code) don't show emojis:\n")
+            f.write("1. Check USE_TYPO_METRICS flag is set (should be YES above)\n")
+            f.write("2. Verify typography metrics match Windows Segoe UI Emoji\n")
+            f.write("3. Ensure CBDT/CBLC bitmap strikes are available\n")
+            f.write("4. Check that cmap has both BMP (3,1) and full Unicode (3,10) subtables\n")
+            f.write("5. Restart Windows after font installation\n")
+
+        print(f"✓ DirectWrite analysis saved to: {report_path}")
+
+    except Exception as e:
+        print(f"⚠ Could not create analysis report: {e}")
 
 
 def main():

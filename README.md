@@ -43,7 +43,7 @@ git clone https://github.com/jjjuk/emoji-win.git && cd emoji-win
 ./convert.sh
 
 # OR convert with direct command (dependencies handled automatically)
-uv run python main.py fonts/AppleColorEmoji.ttf fonts/SegoeUIEmoji.ttf
+uv run python main.py fonts/AppleColorEmoji.ttf fonts/AppleColorEmojiForWindows.ttf
 ```
 
 ### Prerequisites
@@ -89,19 +89,28 @@ python main.py input_apple_font.ttf output_windows_font.ttf
 uv run python main.py AppleColorEmoji.ttf SegoeUIEmoji.ttf
 ```
 
-## 📥 Getting Apple Color Emoji Font
+## 📥 Getting Required Fonts
 
-### Recommended Source: apple-emoji-linux Project
+### 1. Apple Color Emoji Font (Required)
 
 The easiest way to get the Apple Color Emoji font is from the **apple-emoji-linux** project:
 
 **🔗 https://github.com/samuelngs/apple-emoji-linux/releases**
 
-This project extracts and provides Apple Color Emoji fonts in a format suitable for conversion. Download the latest `AppleColorEmoji.ttf` from their releases.
+- Download the latest `AppleColorEmoji.ttf` from their releases
+- **Place it in**: `fonts/AppleColorEmoji.ttf`
+
+### 2. Windows Segoe UI Emoji Font (Optional but Recommended)
+
+For best DirectWrite compatibility (Windows Terminal, Telegram Desktop, modern apps):
+
+- **Extract from Windows**: Copy `seguiemj.ttf` from `C:\Windows\Fonts\` on any Windows system
+- **Place it in**: `fonts/seguiemj.ttf`
+- **Why needed**: Provides COLR/CPAL tables for modern Windows applications
 
 ### Alternative Sources
 
-You can also obtain the font from:
+You can also obtain the Apple font from:
 - macOS system (`/System/Library/Fonts/Apple Color Emoji.ttc`)
 - iOS device backup
 - Other legitimate sources

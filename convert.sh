@@ -31,6 +31,11 @@ if [ ! -f "$INPUT_FONT" ]; then
     echo "2. Download the latest AppleColorEmoji.ttf"
     echo "3. Place it in the fonts/ directory"
     echo
+    echo "📋 For best DirectWrite compatibility (optional):"
+    echo "1. Copy seguiemj.ttf from C:\\Windows\\Fonts\\ on any Windows system"
+    echo "2. Place it as fonts/seguiemj.ttf"
+    echo "3. This enables COLR/CPAL support for Windows Terminal, Telegram Desktop"
+    echo
     echo "Or specify a different path:"
     echo "  ./convert.sh /path/to/your/AppleColorEmoji.ttf output.ttf"
     exit 1

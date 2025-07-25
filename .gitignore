@@ -15,6 +15,7 @@ wheels/
 *.otf
 fonts/*.ttf
 fonts/*.ttc
+fonts/*.txt
 fonts/*.otf
 !fonts/.gitkeep
 
