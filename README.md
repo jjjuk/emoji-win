@@ -1,7 +1,7 @@
 # emoji-win
 
 > **⚠️ EXPERIMENTAL PROJECT NOTICE**
-> This project is **99% vibe-coded** (created by AI agent) and is highly **experimental**. While the current solution works great on the latest Windows 11, it requires further investigation and testing. Use at your own risk and always backup your system fonts before proceeding.
+> This project is **99% vibe-coded** (created by AI agent) and is highly **experimental**. While the current solution works great on the latest Windows 11 and using browser apps, some native apps still don't use converted emojies. Project requires further investigation and testing. Use at your own risk and always backup your system fonts before proceeding.
 
 ## 🍎 Why emoji-win?
 
