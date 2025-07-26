@@ -1,0 +1,46 @@
+[project]
+name = "emoji-win"
+version = "1.0.0"
+description = "Get beautiful Apple emojis on Windows 11 - convert Apple Color Emoji fonts for Windows compatibility"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fonttools>=4.0.0",
+    "pillow>=9.0.0",
+]
+authors = [
+    {name = "jjjuk", email = "your.email@example.com"}
+]
+license = {text = "MIT"}
+keywords = ["emoji", "windows", "apple", "font", "win11", "emojis", "directwrite"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Graphics :: Graphics Conversion",
+    "Topic :: System :: Fonts",
+    "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/jjjuk/emoji-win"
+Repository = "https://github.com/jjjuk/emoji-win"
+Issues = "https://github.com/jjjuk/emoji-win/issues"
+
+[project.scripts]
+emoji-win = "emoji_win.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["emoji_win*"]
+
+[tool.setuptools.package-data]
+emoji_win = ["*.md", "*.txt"]
