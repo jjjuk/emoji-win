@@ -8,13 +8,11 @@ Author: jjjuk
 License: MIT
 """
 
-import os
 import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
 try:
-    import inquirer
     from blessed import Terminal
     from rich.console import Console
     from rich.panel import Panel
@@ -32,7 +30,6 @@ try:
     from rich.tree import Tree
     from rich.live import Live
 
-    from rich import box
 except ImportError as e:
     print(f"❌ Error: Required packages not installed: {e}")
     print("Please run: uv sync")
@@ -420,10 +417,21 @@ class InteractiveCLI:
                         for step in completed_steps:
                             final_content += f"[green]✓[/green] {step}\n"
 
+                        final_content += (
+                            f"\n[bold green]✨ Font successfully converted![/bold green]\n\n"
+                            f"[bold]Output file:[/bold] {output_path}\n"
+                            f"[bold]File size:[/bold] {self._format_file_size(output_path.stat().st_size)}\n\n"
+                            f"[dim]To install on Windows:[/dim]\n"
+                            f"[dim]1. Copy the font file to your Windows machine[/dim]\n"
+                            f"[dim]2. Run windows_font_manager.bat as Administrator[/dim]\n"
+                            f"[dim]3. Choose option 1 (INSTALL)[/dim]\n"
+                            f"[dim]4. Restart Windows for changes to take effect[/dim]"
+                        )
+
                         live.update(
                             Panel(
                                 final_content,
-                                title="🔄 Font Conversion",
+                                title="🎉 Success",
                                 border_style="green",
                             )
                         )
@@ -453,20 +461,6 @@ class InteractiveCLI:
 
         # Show success panel after live context ends
         if success:
-            self.console.print()
-            success_panel = Panel(
-                f"[bold green]✨ Font successfully converted![/bold green]\n\n"
-                f"[bold]Output file:[/bold] {output_path}\n"
-                f"[bold]File size:[/bold] {self._format_file_size(output_path.stat().st_size)}\n\n"
-                f"[dim]To install on Windows:[/dim]\n"
-                f"[dim]1. Copy the font file to your Windows machine[/dim]\n"
-                f"[dim]2. Run windows_font_manager.bat as Administrator[/dim]\n"
-                f"[dim]3. Choose option 1 (INSTALL)[/dim]\n"
-                f"[dim]4. Restart Windows for changes to take effect[/dim]",
-                title="🎉 Success",
-                border_style="green",
-            )
-            self.console.print(success_panel)
             return True
         else:
             self.console.print("[red]❌ Font conversion failed[/red]")
