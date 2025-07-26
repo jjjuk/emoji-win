@@ -3,6 +3,10 @@
 > **⚠️ EXPERIMENTAL PROJECT NOTICE**
 > This project is **99% vibe-coded** (created by AI agent) and is highly **experimental**. While the current solution works great on the latest Windows 11 and using browser apps, some native apps still don't use converted emojies. Project requires further investigation and testing. Use at your own risk and always backup your system fonts before proceeding.
 
+<img width="420" height="729" alt="apple emoji win on demo" src="https://github.com/user-attachments/assets/6c78d21d-e22b-459e-8f67-4f0fdaf7125d" />
+
+</br>
+
 ## 🍎 Why emoji-win?
 
 **Tired of Windows 11's bland default emojis?** Want the beautiful, expressive Apple emojis on your Windows machine? You're in the right place!
